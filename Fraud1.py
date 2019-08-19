@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[161]:
 
 
 import pandas as pd
@@ -21,80 +21,113 @@ from sklearn.model_selection import GridSearchCV,StratifiedKFold
 from sklearn.metrics import classification_report
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import cross_val_score
 
 
-# In[2]:
+# In[177]:
 
 
 ####import dataset
 df=pd.read_csv("fraud.csv") 
 
 
-# In[3]:
+# In[179]:
+
+
+df.columns
+
+
+# In[87]:
 
 
 #####this one is same as sample 
 df = df.rename(columns={'oldbalanceOrg':'oldBalanceOrig', 'newbalanceOrig':'newBalanceOrig',                         'oldbalanceDest':'oldBalanceDest', 'newbalanceDest':'newBalanceDest'})
 
 
-# In[32]:
+# In[3]:
 
 
 df1=pd.read_csv("fraud.csv") 
 df1=df1.rename(columns={'oldbalanceOrg':'oldBalanceOrig', 'newbalanceOrig':'newBalanceOrig',                         'oldbalanceDest':'oldBalanceDest', 'newbalanceDest':'newBalanceDest'})
 
 
-# In[34]:
+# In[4]:
 
 
 df1['errorBalanceOrig']=round(df1['newBalanceOrig']+df1['amount']-df1['oldBalanceOrig'])
 df1['errorBalanceDest']=round(df1['oldBalanceDest']+df1['amount']-df1['newBalanceDest'])
 
 
-# In[37]:
+# In[15]:
+
+
+df1['nameOrig'].value_counts()
+
+
+# In[181]:
+
+
+df['isFlaggedFraud'].value_counts()
+
+
+# In[25]:
+
+
+df1[df1['nameOrig']=='C2098525306'][['nameDest','amount','type','isFraud']]
+
+
+# In[ ]:
+
+
+C2098525306,
+C400299098     3
+C1902386530    3
+C1065307291    3
+C724452879     3
+C545315117     3
+C1832548028    3
+C1976208114    3
+C1462946854    3
+C1999539787    3
+C1784010646    3
+C1530544995    3
+C2051359467    3
+C363736674     3
+C1677795071    3
+
+
+# In[16]:
+
+
+np.sum(df1['nameOrig'].value_counts()>2)
+
+
+# In[17]:
 
 
 df1['nameDest'].value_counts()
 
 
-# In[28]:
+# In[13]:
 
 
-C
-
-
-# In[11]:
-
-
-import collections
-
-
-# In[26]:
-
-
-B=collections.Counter(C)
-B
-
-
-# In[14]:
-
-
-np.unique(B)
-
-
-# In[20]:
-
-
-C1=np.sum(B)
-
-
-# In[24]:
-
-
-count
+np.sum(df1['nameDest'].value_counts()>90)
 
 
 # In[4]:
+
+
+#df1['nameDest'].value_counts()
+df1['type'].value_counts()
+
+
+# In[ ]:
+
+
+
+
+
+# In[28]:
 
 
 ######all data informations 
@@ -139,19 +172,40 @@ def datainfo(df):
 datainfo(df)
 
 
-# In[5]:
+# In[173]:
+
+
+print(df.type.value_counts())
+
+f, ax = plt.subplots(1, 1, figsize=(8, 8))
+df.type.value_counts().plot(kind='bar', title="Transaction type", ax=ax, figsize=(8,8))
+plt.show()
+
+
+# In[174]:
+
+
+ax = df.groupby(['type', 'isFraud']).size().plot(kind='bar')
+ax.set_title("# of transaction which are the actual fraud per transaction type")
+ax.set_xlabel("(Type, isFraud)")
+ax.set_ylabel("Count of transaction")
+for p in ax.patches:
+    ax.annotate(str(format(int(p.get_height()), ',d')), (p.get_x(), p.get_height()*1.01))
+
+
+# In[116]:
 
 
 print('\nAre there any merchants among originator accounts for CASH_IN transactions? {}'.format((df.loc[df.type == 'CASH_IN'].nameOrig.str.contains('M')).any())) 
 
 
-# In[7]:
+# In[117]:
 
 
 print('\nAre there any merchants among destination accounts for CASH_OUT transactions? {}'.format((df.loc[df.type == 'CASH_OUT'].nameDest.str.contains('M')).any())) # False
 
 
-# In[8]:
+# In[118]:
 
 
 print('\nAre there merchants among any originator accounts? {}'.format(      df.nameOrig.str.contains('M').any())) # False
@@ -165,7 +219,7 @@ print('\nAre there any transactions having merchants among destination accounts 
 ###############Exploratory Data Analysis
 
 
-# In[9]:
+# In[120]:
 
 
 def fraudulent(dataframe,column1,column2,column3,action1,action2,value1,value2):
@@ -191,13 +245,19 @@ def fraudulent(dataframe,column1,column2,column3,action1,action2,value1,value2):
     
 
 
-# In[10]:
+# In[121]:
 
 
 fraudulent(df,'isFraud','type','isFlaggedFraud','TRANSFER','CASH_OUT',1,0)
 
 
-# In[11]:
+# In[122]:
+
+
+fraudulent(dataset1,'isFraud','type','isFlaggedFraud','TRANSFER','CASH_OUT',1,0)
+
+
+# In[182]:
 
 
 def Destination():
@@ -214,7 +274,7 @@ def Destination():
     print('\nHow many destination accounts of transactions flagged as fraud have been destination accounts more than once?:',DestCount)
 
 
-# In[12]:
+# In[183]:
 
 
 Destination()
@@ -282,7 +342,7 @@ minmaxbalance()
 #######################Data cleaning###############################
 
 
-# In[166]:
+# In[124]:
 
 
 def cleaning(data,column1,column2,column3,column4,column5,column6,column7,column8,column9):
@@ -317,16 +377,39 @@ def cleaning(data,column1,column2,column3,column4,column5,column6,column7,column
   
 
 
-# In[167]:
+# In[125]:
 
 
 cleaning(df,'type','nameOrig', 'nameDest', 'isFlaggedFraud','isFraud','oldBalanceDest','newBalanceDest','oldBalanceOrig', 'newBalanceOrig')
 
 
-# In[21]:
+# In[127]:
 
 
-X.head()
+Y.head()
+
+
+# In[133]:
+
+
+Y2=Y.copy()
+X2=X.copy()
+X2["HourOfDay"]=dataset1["HourOfDay"]
+X2["Dayofweek"]=dataset1["Dayofweek"]
+
+
+# In[135]:
+
+
+def Fengineering(column1,column2,column3,column4,column5):
+    global newcol1
+    global newcol2
+    newcol1= X2[column1] + X2[column2]- X2[column3]
+    newcol2= X2[column4] + X2[column2 ] - X2[column5]
+Fengineering('newBalanceOrig','amount','oldBalanceOrig','oldBalanceDest','newBalanceDest')
+X2['errorBalanceOrig']=newcol1
+X2['errorBalanceDest']=newcol2
+X2.head()
 
 
 # In[23]:
@@ -335,7 +418,7 @@ X.head()
 #######################Feature Engineering ###############################
 
 
-# In[19]:
+# In[136]:
 
 
 def Fengineering(column1,column2,column3,column4,column5):
@@ -349,7 +432,7 @@ X['errorBalanceDest']=newcol2
 X.head()
 
 
-# In[31]:
+# In[30]:
 
 
 #3FINDING HOURS AND DAYS/copy the dataset to new dataset,then make the new dataset and cange type to new name
@@ -480,7 +563,7 @@ def DayHour(X,Y):
 DayHour(fraud,valid)
 
 
-# In[51]:
+# In[31]:
 
 
 dataset1 = data_new.copy()
@@ -494,6 +577,59 @@ dataset1["Dayofweek"] = np.nan # initializing feature column
 dataset1.Dayofweek = data_new.step % 7
 
 print("Head of dataset1: \n", pd.DataFrame.head(dataset1))
+
+
+# In[51]:
+
+
+dataset1['nameOrig'].value_counts().head(15)
+item=['C2098525306','C400299098','C1902386530','C1065307291','C724452879','C545315117','C1832548028','C1976208114','C1462946854','C1999539787','C1784010646','C1530544995' ,'C2051359467','C363736674','C1677795071']  
+   
+
+
+# In[71]:
+
+
+df3=[]
+for item_v  in item[0:14]:
+    print('############################')
+    print('the name of orgin is',item_v)
+    print('############################')
+    print(dataset1[dataset1['nameOrig']==item_v][['nameDest','Dayofweek','HourOfDay','amount','type','isFraud']])
+    print('---------------------------------------------------------------------------------------------------------')
+    df3.append(item_v)
+    df3.append(dataset1[dataset1['nameOrig']==item_v][['nameDest','Dayofweek','HourOfDay','amount','type','isFraud']])
+
+
+# In[73]:
+
+
+dataset1['nameDest'].value_counts().head(15)  
+
+
+# In[82]:
+
+
+item1=['C1286084959','C985934102','C665576141','C2083562754','C248609774','C1590550415','C1789550256','C451111351','C1360767589','C1023714065','C97730845','C977993101' ,'C392292416','C1899073220 ','C306206744']
+
+
+# In[99]:
+
+
+df5=[]
+for item_v1  in item1[0:14]:
+    print('####################################################################################################################')
+    print('the name of Dest is',item_v1)
+    print('')
+    print('---------------------------------------------------------------------------------------------------------')
+    print(dataset1[dataset1['nameDest']==item_v1][['nameOrig','Dayofweek','HourOfDay','amount','type','isFraud']])
+    print('---------------------------------------------------------------------------------------------------------')
+    print('the avrage of amount is',np.mean(dataset1[dataset1['nameDest']==item_v1]['amount']))
+    print('the minimum of amount is',min(dataset1[dataset1['nameDest']==item_v1]['amount']))
+    print('the Maximum of amount is',max(dataset1[dataset1['nameDest']==item_v1]['amount']))
+    print('the standard deviation of amount is',np.std(dataset1[dataset1['nameDest']==item_v1]['amount']))
+    df5.append(item_v1)
+    df5.append(dataset1[dataset1['nameDest']==item_v1][['nameOrig','Dayofweek','HourOfDay','amount','type','isFraud']])
 
 
 # In[62]:
@@ -687,7 +823,7 @@ plotfraud(X)
 dataset1.head()
 
 
-# In[235]:
+# In[104]:
 
 
 def updateFraud1(df1,df2):
@@ -717,7 +853,7 @@ def updateFraud1(df1,df2):
    
 
 
-# In[236]:
+# In[102]:
 
 
 X1 = dataset1.loc[(dataset1['type'] == 'TRANSFER') | (dataset1['type'] == 'CASH_OUT')]
@@ -729,13 +865,13 @@ X1.loc[X1['type'] == 'CASH_OUT', 'type'] = 1
 X1['type'] = X1['type'].astype(int)
 
 
-# In[237]:
+# In[105]:
 
 
 updateFraud1(X1,Y1)
 
 
-# In[238]:
+# In[106]:
 
 
 def plotfraud1(df1):
@@ -765,7 +901,14 @@ X.fillna(X.mean(), inplace=True)
 trainX, testX, trainY, testY = train_test_split(X, Y, test_size = 0.2,                                                 random_state = 42)
 
 
-# In[ ]:
+# In[143]:
+
+
+X2.fillna(X2.mean(), inplace=True)
+trainX2, testX2, trainY2, testY2 = train_test_split(X2, Y2, test_size = 0.2,                                                 random_state = 42)
+
+
+# In[109]:
 
 
 clf_xgb = xgb.XGBClassifier(objective = 'binary:logistic')
@@ -778,7 +921,7 @@ param_dist = {'n_estimators': stats.randint(150, 1000),
              }
 
 numFolds = 5
-kfold_5 = cross_validation.KFold(n = len(X), shuffle = True, n_folds = numFolds)
+kfold_5 = cross_validation.KFold(n = len(X2), shuffle = True, n_folds = numFolds)
 
 clf = RandomizedSearchCV(clf_xgb, 
                          param_distributions = param_dist,
@@ -790,7 +933,7 @@ clf = RandomizedSearchCV(clf_xgb,
                          n_jobs = -1)
 
 
-# In[29]:
+# In[111]:
 
 
 def xgbClassifier (df1, df2,a,b,n):
@@ -805,19 +948,25 @@ def xgbClassifier (df1, df2,a,b,n):
     
 
 
-# In[30]:
+# In[113]:
 
 
 xgbClassifier(X,Y,0.2,3,4)
 
 
-# In[105]:
+# In[137]:
+
+
+xgbClassifier(X2,Y2,0.2,3,4)
+
+
+# In[138]:
 
 
 fig = plt.figure(figsize = (14, 9))
 ax = fig.add_subplot(111)
 
-colours = ["r", "g", "b", "peachpuff", "orange","gray","yellow","m","c"]
+colours = ["r", "g", "b", "peachpuff", "orange","gray","yellow","m","c","black","gray"]
 
 ax = plot_importance(Xgb, height = 1, color = colours, grid = False,                      show_values = False, importance_type = 'cover', ax = ax);
 for axis in ['top','bottom','left','right']:
@@ -829,7 +978,7 @@ ax.set_yticklabels(ax.get_yticklabels(), size = 12);
 ax.set_title('Ordering of features by importance to the model learnt', size = 20);
 
 
-# In[106]:
+# In[139]:
 
 
 to_graphviz(Xgb)
@@ -841,7 +990,7 @@ to_graphviz(Xgb)
 #################Bias-variance tradeoff
 
 
-# In[23]:
+# In[140]:
 
 
 def bias(K,Z,K_train,Z_train,a,b):
@@ -875,6 +1024,12 @@ def bias(K,Z,K_train,Z_train,a,b):
 bias(X,Y,trainX,trainY,3,4)
 
 
+# In[144]:
+
+
+bias(X2,Y2,trainX2,trainY2,3,4)
+
+
 # In[89]:
 
 
@@ -903,26 +1058,59 @@ def biasGragh() :
 biasGragh()
 
 
+# In[145]:
+
+
+def biasGragh1() :
+    colours = plt.cm.tab10(np.linspace(0, 1, 9))
+    fig = plt.figure(figsize = (14, 9))
+    plt.fill_between(trainSizes, trainScoresMean - trainScoresStd,
+    trainScoresMean + trainScoresStd, alpha=0.1, color=colours[0])
+    plt.fill_between(trainSizes, crossValScoresMean - crossValScoresStd,
+    crossValScoresMean + crossValScoresStd, alpha=0.1, color=colours[1])
+    plt.plot(trainSizes, trainScores.mean(axis = 1), 'o-', label = 'train', color = colours[0])
+    plt.plot(trainSizes, crossValScores.mean(axis = 1), 'o-', label = 'cross-val',color = colours[1])
+    ax = plt.gca()
+    for axis in ['top','bottom','left','right']:
+      ax.spines[axis].set_linewidth(2)
+    handles, labels = ax.get_legend_handles_labels()
+    plt.legend(handles, ['train', 'cross-val'], bbox_to_anchor=(0.8, 0.15),loc=2, borderaxespad=0, fontsize = 16);
+    plt.xlabel('training set size', size = 16); 
+    plt.ylabel('AUPRC', size = 16)
+    plt.title('Learning curves indicate slightly underfit model', size = 20);
+
+
+# In[147]:
+
+
+biasGragh1()
+
+
 # In[ ]:
 
 
 ###########################logistic
 
 
-# In[25]:
+# In[153]:
 
 
 # ####Hyperparameters
 grid={"C":np.logspace(-3,3,7), "penalty":["l1","l2"]}# l1 lasso l2 ridge
 X1_train,X1_test,y1_train,y1_test=train_test_split(X,Y,test_size=0.25,random_state=0)
 logreg = LogisticRegression()
+
+
+# In[154]:
+
+
 logreg_cv=GridSearchCV(logreg,grid,cv=5)
 logreg_cv.fit(X,Y)
 print("tuned hpyerparameters :(best parameters) ",logreg_cv.best_params_)
 print("accuracy :",logreg_cv.best_score_)
 
 
-# In[ ]:
+# In[148]:
 
 
 def EvaluationMetrics(K,Z,z_test,z_train,z_pred):
@@ -938,10 +1126,10 @@ def EvaluationMetrics(K,Z,z_test,z_train,z_pred):
    print('#####################classification_report########################################')
    print(classification_report(z_test, z_pred))
    print('#####################Cross validation kfold=5 ########################################')
-   print(cross_val_score(logreg, X,Y,cv=5) )
+   print(cross_val_score(logreg,K,Z,cv=5) )
 
 
-# In[72]:
+# In[149]:
 
 
 def ROC(K,Z,z_test, z_pred_prob):   
@@ -977,6 +1165,28 @@ EvaluationMetrics(X,Y,y1_test,y1_train,y_pred1)
 
 
 ROC(X,Y,y1_test, y_pred_prob1)
+
+
+# In[158]:
+
+
+# fit the model with data
+logreg.fit(trainX2,trainY2)
+y_pred2=logreg.predict(testX2)
+y_pred_prob2 = logreg.predict_proba(testX2)[:,1]
+y_pred_prob2 = logreg.predict_proba(testX2)[:,1]
+
+
+# In[162]:
+
+
+EvaluationMetrics(X2,Y2,testY2,trainY2,y_pred2)  
+
+
+# In[163]:
+
+
+ROC(X2,Y2,testY2, y_pred_prob2)
 
 
 # In[ ]:
@@ -1021,4 +1231,66 @@ EvaluationMetrics(X,Y,y_test,y_train,y_pred)
 
 
 ROC(X,Y,y_test, y_pred_prob)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[165]:
+
+
+####Hyperparameters
+tuned_parameters = { 'tfidf__use_idf': (True, False),'tfidf__norm': ('l1', 'l2'),'alpha': [1, 1e-1, 1e-2]}
+gnb = GaussianNB()
+X2_train, X2_test, y2_train, y2_test = train_test_split(X2,Y2, test_size=0.3,random_state=109)
+gnb_cv=GridSearchCV(gnb,tuned_parameters,cv=5)
+gnb_cv.fit(X2_train, y2_train)
+
+print("tuned hpyerparameters :(best parameters) ",gnb_cv.best_params_)
+print("accuracy :",gnb_cv.best_score_)
+
+
+# In[166]:
+
+
+gnb = GaussianNB()
+
+
+# In[167]:
+
+
+# Split dataset into training set and test set
+X2_train, X2_test, y2_train, y2_test = train_test_split(X2,Y2, test_size=0.3,random_state=109) # 70% training and 30% test
+#Train the model using the training sets
+gnb.fit(X2_train, y2_train)
+#Predict the response for test dataset
+y2_pred = gnb.predict(X2_test)
+y2_pred_prob = gnb.predict_proba(X2_test)[:,1]
+
+
+# In[168]:
+
+
+EvaluationMetrics(X2,Y2,y2_test,y2_train,y2_pred)  
+
+
+# In[172]:
+
+
+ROC(X2,Y2,y2_test, y2_pred_prob)
 
